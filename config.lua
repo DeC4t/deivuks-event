@@ -28,7 +28,7 @@ Config.helpNotify = 'esx' -- esx/deivuks-ui
 
 Config.Language = 'lt'
 
-Config.Locales = {
+Config.Locale = {
     ['lt'] = {
         ['go_start'] = 'Bėkite iki pradžios taško, kad pradėtumėte event.',
         ['press_change'] = 'Spauskite ~INPUT_CONTEXT~ ,kad pasikeistumėte automobilį į ',
