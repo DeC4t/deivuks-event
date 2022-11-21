@@ -1,5 +1,5 @@
 local blip, started, newWay
-local inMarker, sleep, type = false, 1000, 24
+local inMarker, sleep, type, lastcoord, distance, incorrect = false, 1000, 24, vec3(0,0,0), 0, false
 
 RegisterNetEvent('d-event:start', function()
     local location = Config.Locations[1]
@@ -9,9 +9,10 @@ RegisterNetEvent('d-event:start', function()
     SetBlipColour(blip, 26)
     SetBlipRouteColour(blip, 26)
     newWay = Config.Locations[1]
+    distance = #(newWay.coords - GetEntityCoords(PlayerPedId()))
     started = true
     if Config.helpNotify == 'esx' then
-        ESX.ShowHelpNotification(Config.Locale[Config.Language]['go_start'])
+        Config.ShowHelpNotify(Config.Locale[Config.Language]['go_start'])
     elseif Config.helpNotify == 'deivuks-ui' then
         exports['deivuks-ui']:topText(true, 'Važiuokite iki kito <a class="text-sky-500">taško</a>.')
     end
@@ -30,6 +31,7 @@ RegisterCommand('getWaypoint', function()
                     Config.SpawnVehicle(Config.Locations[i].vehicle, GetEntityCoords(PlayerPedId()), GetEntityHeading(PlayerPedId()))
                     RemoveBlip(blip)
                     newWay = Config.Locations[i+1]
+                    distance = #(newWay.coords - GetEntityCoords(PlayerPedId()))
                     blip = AddBlipForCoord(newWay.coords)
                     SetBlipSprite(blip, Config.Blips[newWay.blip])
                     SetBlipRoute(blip, true)
@@ -48,12 +50,14 @@ RegisterCommand('getWaypoint', function()
                     RemoveBlip(blip)
                     started = false
                     inMarker = false
+                    incorrect = false
                     sleep = 1000
                     if Config.helpNotify == 'deivuks-ui' then
                         exports['deivuks-ui']:keybingMenu(false)
                         exports['deivuks-ui']:topText(false)
                     end
                     Config.DeleteVehicle(GetVehiclePedIsIn(PlayerPedId(), false))
+                    TriggerServerEvent('d-event:sendPlaces')
                 end
             end
         end
@@ -69,7 +73,7 @@ Citizen.CreateThread(function()
                 if #(newWay.coords - coords) < 5.0 then
                     if not newWay.delete then
                         if Config.helpNotify == 'esx' then
-                            ESX.ShowHelpNotification(Config.Locale[Config.Language]['press_change'])
+                            Config.ShowHelpNotify(Config.Locale[Config.Language]['press_change'])
                         elseif Config.helpNotify == 'deivuks-ui' then
                             exports['deivuks-ui']:keybingMenu(true, {
                                 {text = 'Spauskite -', key = 'E', text2 = ' ,kad pasikeistumėte automobilį į <a class="text-sky-500">'..newWay.name..'</a>'}
@@ -78,7 +82,7 @@ Citizen.CreateThread(function()
                         end
                     else
                         if Config.helpNotify == 'esx' then
-                            ESX.ShowHelpNotification(Config.Locale[Config.Language]['end_race'])
+                            Config.ShowHelpNotify(Config.Locale[Config.Language]['end_race'])
                         elseif Config.helpNotify == 'deivuks-ui' then
                             exports['deivuks-ui']:keybingMenu(true, {
                                 {text = 'Spauskite -', key = 'E', text2 = ' ,kad užbaigtumėte <a class="text-sky-500">lenktynes</a>.'}
@@ -90,11 +94,13 @@ Citizen.CreateThread(function()
             else
                 inMarker = false
                 sleep = 1000
-                if Config.helpNotify == 'esx' then
-                    ESX.ShowHelpNotification(Config.Locale[Config.Language]['go_next'])
-                elseif Config.helpNotify == 'deivuks-ui' then
-                    exports['deivuks-ui']:keybingMenu(false)
-                    exports['deivuks-ui']:topText(true, 'Važiuokite iki kito <a class="text-sky-500">taško</a>.')
+                if not incorrect then
+                    if Config.helpNotify == 'esx' then
+                        Config.ShowHelpNotify(Config.Locale[Config.Language]['go_next'])
+                    elseif Config.helpNotify == 'deivuks-ui' then
+                        exports['deivuks-ui']:keybingMenu(false)
+                        exports['deivuks-ui']:topText(true, 'Važiuokite iki kito <a class="text-sky-500">taško</a>.')
+                    end
                 end
             end
         end
@@ -111,6 +117,38 @@ Citizen.CreateThread(function()
             DrawMarker(1, newWay.coords.x, newWay.coords.y, newWay.coords.z -1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0, 2.0, 66, 151, 241, 40, false, false, false, nil, nil, false)
         end
         Wait(sleep)
+    end
+end)
+
+local time, savedCoords = Config.TimeBeforeTeleport * 1000, vec3(0,0,0)
+
+Citizen.CreateThread(function()
+    while true do
+        if started then
+            if time > 0 then
+                local coords = GetEntityCoords(PlayerPedId())
+                if #(newWay.coords - coords) >= distance + 15 then 
+                    if Config.helpNotify == 'esx' then
+                        Config.ShowHelpNotify(Config.Locale[Config.Language]['go_back'])
+                    elseif Config.helpNotify == 'deivuks-ui' then
+                        exports['deivuks-ui']:topText(true, '<a class="text-sky-500">Apsisukite</a>, jūs važiuojate ne į tą pusę.')
+                    end
+                    time -= 500
+                    incorrect = true
+                end
+                if #(newWay.coords - coords) <= distance then 
+                    distance = #(newWay.coords - coords)
+                    time = Config.TimeBeforeTeleport * 1000
+                    savedCoords = coords
+                    incorrect = false
+                end
+            else
+                SetPedCoordsKeepVehicle(PlayerPedId(), savedCoords)
+                time = Config.TimeBeforeTeleport * 1000
+                incorrect = false
+            end
+        end
+        Wait(500)
     end
 end)
 

@@ -24,7 +24,7 @@ Config.Blips = { -- Blip types used in Config.Locations as a blip
     ['end'] = 38,
 }
 
-Config.helpNotify = 'esx' -- esx/deivuks-ui
+Config.helpNotify = 'deivuks-ui' -- esx/deivuks-ui
 
 Config.Language = 'lt'
 
@@ -34,14 +34,28 @@ Config.Locale = {
         ['press_change'] = 'Spauskite ~INPUT_CONTEXT~ ,kad pasikeistumėte automobilį į ',
         ['end_race'] = 'Spauskite ~INPUT_CONTEXT~ ,kad užbaigtumėte lenktynes.',
         ['go_next'] = 'Važiuokite iki kito taško.',
+        ['go_back']  = 'Apsisukite, jūs važiuojate ne į tą pusę.',
+        ['first_places'] = 'Pirmosios trys vietos atitenka: #1 %s, #2 %s, #3 %.',
     },
     ['en'] = {
         ['go_start'] = 'Run to the starting point to start the event.',
         ['press_change'] = 'Press ~INPUT_CONTEXT~ to change the vehicle to ',
         ['end_race'] = 'Press ~INPUT_CONTEXT~ to complete the race.',
         ['go_next'] = 'Drive to the next point.',
+        ['go_back']  = 'Turn around, you`re driving the wrong way.',
+        ['first_places'] = 'First three places goes to: #1 %s, #2 %s, #3 %.',
     },
 }
+
+Config.TimeBeforeTeleport = 15 -- Time in seconds before teleporting back to location of correct(after driving incorrect route) route while racing
+
+Config.EndRace = false -- End race after first 3 players done racing
+
+Config.JoinAfterStart = false -- Let players join event when it is started
+
+Config.ShowHelpNotify = function(text)
+    ESX.ShowHelpNotification(text)
+end
 
 Config.SpawnVehicle = function(vehicle, coords, heading)
     ESX.Game.SpawnVehicle(vehicle, coords, heading, function(car)
